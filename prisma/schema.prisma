@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  domains   Domain[]
+}
+
+model Domain {
+  id        String   @id @default(cuid())
+  hostname  String
+  addedAt   DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  scans     Scan[]
+  alerts    Alert[]
+}
+
+model Scan {
+  id              String   @id @default(cuid())
+  scannedAt       DateTime @default(now())
+  domainId        String
+  domain          Domain   @relation(fields: [domainId], references: [id])
+  valid           Boolean
+  expiresAt       DateTime?
+  issuedAt        DateTime?
+  issuer          String?
+  subject         String?
+  daysUntilExpiry Int?
+  keyBits         Int?
+  signatureAlg    String?
+  sans            String[]
+  chainDepth      Int?
+  riskScore       Int      @default(0)
+  riskLabel       String   @default("unknown")
+  rawData         Json?
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  domainId  String
+  domain    Domain   @relation(fields: [domainId], references: [id])
+  type      String
+  message   String
+  severity  String
+  sent      Boolean  @default(false)
+}
