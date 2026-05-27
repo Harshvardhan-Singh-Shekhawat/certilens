@@ -13,6 +13,7 @@ export default function Navbar() {
   { href: "/scans", label: "Scans" },
   { href: "/alerts", label: "Alerts" },
   { href: "/ctlogs", label: "CT Logs" },
+  { href: "/anomalies", label: "Anomalies" },
 ];
 
   return (

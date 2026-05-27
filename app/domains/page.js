@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ChainGraph from "@/components/ChainGraph";
 
 export default function Domains() {
   const [domains, setDomains] = useState([]);
@@ -9,6 +10,7 @@ export default function Domains() {
   const [scanning, setScanning] = useState({});
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     fetchDomains();
@@ -65,13 +67,16 @@ export default function Domains() {
     }
   };
 
+  const toggleExpanded = (domainId) => {
+    setExpanded((prev) => ({ ...prev, [domainId]: !prev[domainId] }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 px-6 py-10">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
           className="mb-8"
         >
           <h1 className="text-3xl font-bold">Domains</h1>
@@ -83,7 +88,7 @@ export default function Domains() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={{ delay: 0.1 }}
           className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8"
         >
           <h2 className="text-lg font-semibold mb-4">Add New Domain</h2>
@@ -130,6 +135,7 @@ export default function Domains() {
               domains.map((domain, index) => {
                 const scan = domain.scans[0];
                 const isScanning = scanning[domain.id];
+                const isExpanded = expanded[domain.id];
                 return (
                   <motion.div
                     key={domain.id}
@@ -149,22 +155,32 @@ export default function Domains() {
                           {domain._count.scans} scan{domain._count.scans !== 1 ? "s" : ""}
                         </p>
                       </div>
-                      <button
-                        onClick={() => scanDomain(domain.id, domain.hostname)}
-                        disabled={isScanning}
-                        className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-                      >
-                        {isScanning ? (
-                          <span className="flex items-center gap-2">
-                            <motion.span
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                              className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full"
-                            />
-                            Scanning...
-                          </span>
-                        ) : "Re-scan"}
-                      </button>
+                      <div className="flex gap-2">
+                        {scan && (
+                          <button
+                            onClick={() => toggleExpanded(domain.id)}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition"
+                          >
+                            {isExpanded ? "Hide Chain" : "View Chain"}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => scanDomain(domain.id, domain.hostname)}
+                          disabled={isScanning}
+                          className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+                        >
+                          {isScanning ? (
+                            <span className="flex items-center gap-2">
+                              <motion.span
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full"
+                              />
+                              Scanning...
+                            </span>
+                          ) : "Re-scan"}
+                        </button>
+                      </div>
                     </div>
 
                     {isScanning ? (
@@ -181,48 +197,64 @@ export default function Domains() {
                         Running live TLS handshake...
                       </motion.div>
                     ) : scan ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="bg-gray-800 rounded-lg p-3">
-                          <p className="text-gray-500 text-xs mb-1">Risk Score</p>
-                          <p className={`text-xl font-bold ${
-                            scan.riskScore >= 70 ? "text-red-400" :
-                            scan.riskScore >= 40 ? "text-yellow-400" :
-                            "text-green-400"
-                          }`}>
-                            {scan.riskScore}/100
-                          </p>
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-gray-500 text-xs mb-1">Risk Score</p>
+                            <p className={`text-xl font-bold ${
+                              scan.riskScore >= 70 ? "text-red-400" :
+                              scan.riskScore >= 40 ? "text-yellow-400" :
+                              "text-green-400"
+                            }`}>
+                              {scan.riskScore}/100
+                            </p>
+                          </div>
+                          <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-gray-500 text-xs mb-1">Expires In</p>
+                            <p className={`text-xl font-bold ${
+                              scan.daysUntilExpiry <= 14 ? "text-red-400" :
+                              scan.daysUntilExpiry <= 30 ? "text-yellow-400" :
+                              "text-green-400"
+                            }`}>
+                              {scan.daysUntilExpiry}d
+                            </p>
+                          </div>
+                          <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-gray-500 text-xs mb-1">Key Bits</p>
+                            <p className="text-xl font-bold text-blue-400">
+                              {scan.keyBits || "—"}
+                            </p>
+                          </div>
+                          <div className="bg-gray-800 rounded-lg p-3">
+                            <p className="text-gray-500 text-xs mb-1">Chain Depth</p>
+                            <p className="text-xl font-bold text-blue-400">
+                              {scan.chainDepth}
+                            </p>
+                          </div>
+                          <div className="bg-gray-800 rounded-lg p-3 col-span-2">
+                            <p className="text-gray-500 text-xs mb-1">Issuer</p>
+                            <p className="text-sm text-gray-300 truncate">{scan.issuer}</p>
+                          </div>
+                          <div className="bg-gray-800 rounded-lg p-3 col-span-2">
+                            <p className="text-gray-500 text-xs mb-1">Signature Algorithm</p>
+                            <p className="text-sm text-gray-300">{scan.signatureAlg}</p>
+                          </div>
                         </div>
-                        <div className="bg-gray-800 rounded-lg p-3">
-                          <p className="text-gray-500 text-xs mb-1">Expires In</p>
-                          <p className={`text-xl font-bold ${
-                            scan.daysUntilExpiry <= 14 ? "text-red-400" :
-                            scan.daysUntilExpiry <= 30 ? "text-yellow-400" :
-                            "text-green-400"
-                          }`}>
-                            {scan.daysUntilExpiry}d
-                          </p>
-                        </div>
-                        <div className="bg-gray-800 rounded-lg p-3">
-                          <p className="text-gray-500 text-xs mb-1">Key Bits</p>
-                          <p className="text-xl font-bold text-blue-400">
-                            {scan.keyBits || "—"}
-                          </p>
-                        </div>
-                        <div className="bg-gray-800 rounded-lg p-3">
-                          <p className="text-gray-500 text-xs mb-1">Chain Depth</p>
-                          <p className="text-xl font-bold text-blue-400">
-                            {scan.chainDepth}
-                          </p>
-                        </div>
-                        <div className="bg-gray-800 rounded-lg p-3 col-span-2">
-                          <p className="text-gray-500 text-xs mb-1">Issuer</p>
-                          <p className="text-sm text-gray-300 truncate">{scan.issuer}</p>
-                        </div>
-                        <div className="bg-gray-800 rounded-lg p-3 col-span-2">
-                          <p className="text-gray-500 text-xs mb-1">Signature Algorithm</p>
-                          <p className="text-sm text-gray-300">{scan.signatureAlg}</p>
-                        </div>
-                      </div>
+
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="mt-4 overflow-hidden"
+                            >
+                              <ChainGraph scan={{ ...scan, domain }} />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </>
                     ) : (
                       <div className="text-gray-500 text-sm">No scan data yet</div>
                     )}
