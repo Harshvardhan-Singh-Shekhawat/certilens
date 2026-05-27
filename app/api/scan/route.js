@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../lib/auth";
 import prisma from "../../../lib/prisma";
 import { scanDomain } from "../../../lib/scanner";
+import { sendExpiryAlert } from "../../../lib/email";
 
 export async function POST(req) {
   try {
@@ -40,7 +41,7 @@ export async function POST(req) {
       },
     });
 
-    // Create alert if high risk
+    // Create alert if high risk or expiring soon
     if (result.riskScore >= 40 || result.daysUntilExpiry <= 30) {
       await prisma.alert.create({
         data: {
@@ -54,6 +55,15 @@ export async function POST(req) {
             result.riskScore >= 70 ? "critical" :
             result.riskScore >= 40 ? "high" : "medium",
         },
+      });
+
+      // Send email alert
+      await sendExpiryAlert({
+        to: session.user.email,
+        hostname,
+        daysUntilExpiry: result.daysUntilExpiry,
+        riskScore: result.riskScore,
+        issuer: result.issuer,
       });
     }
 

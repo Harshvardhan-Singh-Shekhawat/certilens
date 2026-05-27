@@ -3,7 +3,8 @@
 > Real-time SSL/TLS certificate intelligence platform built with Next.js, PostgreSQL, and Node.js TLS
 
 **Live Demo:** https://certilens.vercel.app  
-**Built by:** Harshvardhan Singh Shekhawat — B.Tech CSE 2nd Year, Cloudflare-stack Networking Intern
+**Built by:** Harshvardhan Singh Shekhawat — B.Tech CSE 2nd Year, Cloudflare-stack Networking Intern  
+**GitHub:** https://github.com/Harshvardhan-Singh-Shekhawat/certilens
 
 ---
 
@@ -33,7 +34,7 @@ Multi-factor scoring across 4 dimensions (0–100):
 | Chain Depth | 10 | Depth 0 = 10pts (self-signed) |
 
 ### 🧠 DBSCAN Anomaly Detection
-- Implemented DBSCAN clustering from scratch (no ML library)
+- Implemented DBSCAN clustering from scratch — no ML library used
 - Clusters scans on 3 dimensions: risk score, days until expiry, key bit strength
 - Noise points flagged as anomalies — catches unusual cert rotation patterns
 - Applied from DAA coursework to real certificate data
@@ -41,12 +42,16 @@ Multi-factor scoring across 4 dimensions (0–100):
 ### 🌐 Certificate Transparency Log Monitoring
 - Queries crt.sh (the public CT log aggregator used by Cloudflare)
 - Detects unexpected issuers, wildcard certificates, rapid issuance
-- Cross-references certificate history against your live scan data
+- Cross-references certificate history against live scan data
+
+> **Note:** crt.sh occasionally rate-limits requests from cloud hosting IPs.
+> CT log queries work reliably from local environments.
+> This is a known limitation of the free crt.sh public API.
 
 ### 📊 Certificate Chain Visualization
 - D3.js animated graph: Root CA → Intermediate → Leaf
-- Color-coded by risk level
-- Expand/collapse per domain
+- Color-coded by risk level (green = low, yellow = medium, red = critical)
+- Expand/collapse per domain on the Domains page
 
 ### 🔔 Auto-Alert System
 - Alerts auto-generated when risk score ≥ 40 or expiry ≤ 30 days
@@ -95,7 +100,7 @@ CertiLens applies:
 - **DAA** coursework → DBSCAN implemented from scratch
 - **ML** coursework → Unsupervised clustering on real data
 
-Built in 35 days during a networking internship. Every feature is functional — no hardcoded data, no seeded database, no fake ML.
+Built during a Cloudflare-stack networking internship. Every feature is functional — no hardcoded data, no seeded database, no fake ML.
 
 ---
 
@@ -108,17 +113,24 @@ npm install
 ```
 
 Create `.env`:
+
+```env
 DATABASE_URL="your-postgresql-url"
 NEXTAUTH_SECRET="your-secret"
 NEXTAUTH_URL="http://localhost:3000"
+RESEND_API_KEY="optional-for-email-alerts"
+```
+
 ```bash
 npx prisma db push
 npx prisma generate
 npm run dev
 ```
 
+Open `localhost:3000`.
+
 ---
 
 ## Live Demo
 
-Open [certilens.vercel.app](https://certilens.vercel.app), sign up, and add any domain — `github.com`, `cloudflare.com`, `google.com`. Watch the live TLS scan run in real time.
+Open [certilens.vercel.app](https://certilens.vercel.app), sign up, and add any domain — `github.com`, `cloudflare.com`, `spotify.com`. Watch the live TLS scan run in real time, then click **View Chain** to see the animated certificate chain graph.
