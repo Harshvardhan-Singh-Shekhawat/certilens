@@ -16,14 +16,62 @@ export default function CTLogs() {
 
     const clean = hostname.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim();
 
-    const res = await fetch(`/api/ctlogs?hostname=${clean}`);
-    const data = await res.json();
+    const res = await fetch(`https://crt.sh/?q=%.${clean}&output=json`, {
+  headers: { "Accept": "application/json" },
+});
+    const text = await res.text();
+if (!text || text.trim() === "") {
+  setError("No certificate records found for this domain");
+  setLoading(false);
+  return;
+}
 
-    if (!res.ok) {
-      setError(data.error);
-    } else {
-      setResult(data);
-    }
+const raw = JSON.parse(text);
+if (!Array.isArray(raw)) {
+  setError("Unexpected response from CT logs");
+  setLoading(false);
+  return;
+}
+
+const seen = new Set();
+const unique = raw.filter((cert) => {
+  if (seen.has(cert.serial_number)) return false;
+  seen.add(cert.serial_number);
+  return true;
+});
+
+const logs = unique.slice(0, 20).map((cert) => ({
+  id: cert.id,
+  issuerName: cert.issuer_name,
+  commonName: cert.common_name,
+  notBefore: cert.not_before,
+  notAfter: cert.not_after,
+  serialNumber: cert.serial_number,
+}));
+
+const anomalies = [];
+const issuers = logs.map((l) => l.issuerName);
+const issuerCounts = {};
+issuers.forEach((i) => { issuerCounts[i] = (issuerCounts[i] || 0) + 1; });
+const dominant = Object.entries(issuerCounts).sort((a, b) => b[1] - a[1])[0];
+const unexpected = Object.entries(issuerCounts).filter(([k]) => k !== dominant[0]);
+if (unexpected.length > 0) anomalies.push({ severity: "high", message: `${unexpected.length} unexpected CA(s) detected` });
+const wildcards = logs.filter((l) => l.commonName?.startsWith("*"));
+if (wildcards.length > 0) anomalies.push({ severity: "medium", message: `${wildcards.length} wildcard certificate(s) found` });
+
+setResult({
+  logs,
+  analysis: {
+    anomalies,
+    summary: {
+      total: logs.length,
+      uniqueIssuers: Object.keys(issuerCounts).length,
+      dominantIssuer: dominant[0],
+      wildcardCount: wildcards.length,
+      recentCount: logs.filter((l) => (Date.now() - new Date(l.notBefore)) / 86400000 <= 7).length,
+    },
+  },
+});
 
     setLoading(false);
   };
