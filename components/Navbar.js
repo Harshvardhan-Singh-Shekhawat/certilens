@@ -8,11 +8,12 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/domains", label: "Domains" },
-    { href: "/scans", label: "Scans" },
-    { href: "/alerts", label: "Alerts" },
-  ];
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/domains", label: "Domains" },
+  { href: "/scans", label: "Scans" },
+  { href: "/alerts", label: "Alerts" },
+  { href: "/ctlogs", label: "CT Logs" },
+];
 
   return (
     <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
