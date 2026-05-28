@@ -45,11 +45,9 @@ const stats = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 overflow-hidden">
-      {/* Background glows */}
       <div className="fixed top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Hero */}
       <div className="flex flex-col items-center justify-center px-4 pt-24 pb-20 text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -93,7 +91,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="flex gap-4 justify-center flex-wrap"
+          className="flex gap-4 justify-center flex-wrap mb-4"
         >
           <Link
             href="/signup"
@@ -107,10 +105,24 @@ export default function Home() {
           >
             Sign In
           </Link>
+          <Link
+            href="/signin?demo=true"
+            className="border border-blue-500/40 hover:border-blue-500 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold px-8 py-3 rounded-lg transition text-sm"
+          >
+            Try Demo →
+          </Link>
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="text-gray-600 text-xs mb-16"
+        >
+          Demo: demo@certilens.app / demo1234
+        </motion.p>
       </div>
 
-      {/* Stats bar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -132,7 +144,6 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Features grid */}
       <div className="max-w-5xl mx-auto px-4 py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -165,7 +176,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* How it works */}
       <div className="border-t border-gray-800 bg-gray-900/30 py-24 px-4">
         <div className="max-w-4xl mx-auto">
           <motion.div
@@ -182,7 +192,7 @@ export default function Home() {
             {[
               { step: "01", title: "Add a domain", desc: "Type any domain — github.com, cloudflare.com, your own site. No setup required." },
               { step: "02", title: "Live TLS scan", desc: "CertiLens opens a real TLS connection, parses the certificate chain, and runs risk scoring." },
-              { step: "03", title: "Get intelligence", desc: "See risk score, expiry, issuer, chain depth, CT log history, and anomaly detection results." },
+              { step: "03", title: "Get intelligence", desc: "See risk score, expiry, issuer, chain depth, anomaly detection, and full certificate details." },
             ].map((item, i) => (
               <motion.div
                 key={item.step}
@@ -200,7 +210,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* CTA */}
       <div className="py-24 px-4 text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -213,12 +222,20 @@ export default function Home() {
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
             Free forever. No credit card. Real TLS intelligence in under 30 seconds.
           </p>
-          <Link
-            href="/signup"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-4 rounded-lg transition text-sm inline-block"
-          >
-            Start Monitoring Free →
-          </Link>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Link
+              href="/signup"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-10 py-4 rounded-lg transition text-sm inline-block"
+            >
+              Start Monitoring Free →
+            </Link>
+            <Link
+              href="/signin?demo=true"
+              className="border border-blue-500/40 hover:border-blue-500 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold px-10 py-4 rounded-lg transition text-sm inline-block"
+            >
+              Try Demo →
+            </Link>
+          </div>
         </motion.div>
       </div>
     </div>
