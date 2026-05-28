@@ -8,6 +8,7 @@ export default function Domains() {
   const [hostname, setHostname] = useState("");
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState({});
+  const [deleting, setDeleting] = useState({});
   const [error, setError] = useState("");
   const [fetching, setFetching] = useState(true);
   const [expanded, setExpanded] = useState({});
@@ -65,6 +66,21 @@ export default function Domains() {
     } else {
       setError(data.error || "Scan failed");
     }
+  };
+
+  const deleteDomain = async (domainId) => {
+    if (!confirm("Delete this domain and all its scan history?")) return;
+    setDeleting((prev) => ({ ...prev, [domainId]: true }));
+
+    const res = await fetch(`/api/domains/${domainId}`, { method: "DELETE" });
+
+    if (res.ok) {
+      await fetchDomains();
+    } else {
+      setError("Failed to delete domain");
+    }
+
+    setDeleting((prev) => ({ ...prev, [domainId]: false }));
   };
 
   const toggleExpanded = (domainId) => {
@@ -135,20 +151,25 @@ export default function Domains() {
               domains.map((domain, index) => {
                 const scan = domain.scans[0];
                 const isScanning = scanning[domain.id];
+                const isDeleting = deleting[domain.id];
                 const isExpanded = expanded[domain.id];
                 return (
                   <motion.div
                     key={domain.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                     className="bg-gray-900 border border-gray-800 rounded-xl p-6"
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-white">
+                        
+                          href={`/domains/${domain.id}`}
+                          className="text-lg font-semibold text-white hover:text-blue-400 transition"
+                        >
                           {domain.hostname}
-                        </h3>
+                        </a>
                         <p className="text-gray-500 text-sm">
                           Added {new Date(domain.addedAt).toLocaleDateString()}
                           {" · "}
@@ -179,6 +200,13 @@ export default function Domains() {
                               Scanning...
                             </span>
                           ) : "Re-scan"}
+                        </button>
+                        <button
+                          onClick={() => deleteDomain(domain.id)}
+                          disabled={isDeleting}
+                          className="bg-red-900/30 hover:bg-red-900/50 disabled:opacity-50 text-red-400 text-sm font-semibold px-4 py-2 rounded-lg transition"
+                        >
+                          {isDeleting ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </div>
