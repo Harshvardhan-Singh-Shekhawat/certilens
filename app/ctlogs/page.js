@@ -16,62 +16,75 @@ export default function CTLogs() {
 
     const clean = hostname.replace(/^https?:\/\//, "").replace(/\/.*$/, "").trim();
 
-    const res = await fetch(`https://crt.sh/?q=%.${clean}&output=json`, {
-  headers: { "Accept": "application/json" },
-});
-    const text = await res.text();
-if (!text || text.trim() === "") {
-  setError("No certificate records found for this domain");
-  setLoading(false);
-  return;
-}
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
 
-const raw = JSON.parse(text);
-if (!Array.isArray(raw)) {
-  setError("Unexpected response from CT logs");
-  setLoading(false);
-  return;
-}
+      const res = await fetch(`https://crt.sh/?q=%.${clean}&output=json`, {
+        headers: { "Accept": "application/json" },
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeout));
 
-const seen = new Set();
-const unique = raw.filter((cert) => {
-  if (seen.has(cert.serial_number)) return false;
-  seen.add(cert.serial_number);
-  return true;
-});
+      const text = await res.text();
+      if (!text || text.trim() === "") {
+        setError("No certificate records found for this domain.");
+        setLoading(false);
+        return;
+      }
 
-const logs = unique.slice(0, 20).map((cert) => ({
-  id: cert.id,
-  issuerName: cert.issuer_name,
-  commonName: cert.common_name,
-  notBefore: cert.not_before,
-  notAfter: cert.not_after,
-  serialNumber: cert.serial_number,
-}));
+      const raw = JSON.parse(text);
+      if (!Array.isArray(raw)) {
+        setError("Unexpected response from CT logs.");
+        setLoading(false);
+        return;
+      }
 
-const anomalies = [];
-const issuers = logs.map((l) => l.issuerName);
-const issuerCounts = {};
-issuers.forEach((i) => { issuerCounts[i] = (issuerCounts[i] || 0) + 1; });
-const dominant = Object.entries(issuerCounts).sort((a, b) => b[1] - a[1])[0];
-const unexpected = Object.entries(issuerCounts).filter(([k]) => k !== dominant[0]);
-if (unexpected.length > 0) anomalies.push({ severity: "high", message: `${unexpected.length} unexpected CA(s) detected` });
-const wildcards = logs.filter((l) => l.commonName?.startsWith("*"));
-if (wildcards.length > 0) anomalies.push({ severity: "medium", message: `${wildcards.length} wildcard certificate(s) found` });
+      const seen = new Set();
+      const unique = raw.filter((cert) => {
+        if (seen.has(cert.serial_number)) return false;
+        seen.add(cert.serial_number);
+        return true;
+      });
 
-setResult({
-  logs,
-  analysis: {
-    anomalies,
-    summary: {
-      total: logs.length,
-      uniqueIssuers: Object.keys(issuerCounts).length,
-      dominantIssuer: dominant[0],
-      wildcardCount: wildcards.length,
-      recentCount: logs.filter((l) => (Date.now() - new Date(l.notBefore)) / 86400000 <= 7).length,
-    },
-  },
-});
+      const logs = unique.slice(0, 20).map((cert) => ({
+        id: cert.id,
+        issuerName: cert.issuer_name,
+        commonName: cert.common_name,
+        notBefore: cert.not_before,
+        notAfter: cert.not_after,
+        serialNumber: cert.serial_number,
+      }));
+
+      const anomalies = [];
+      const issuers = logs.map((l) => l.issuerName);
+      const issuerCounts = {};
+      issuers.forEach((i) => { issuerCounts[i] = (issuerCounts[i] || 0) + 1; });
+      const dominant = Object.entries(issuerCounts).sort((a, b) => b[1] - a[1])[0];
+      const unexpected = Object.entries(issuerCounts).filter(([k]) => k !== dominant[0]);
+      if (unexpected.length > 0) anomalies.push({ severity: "high", message: `${unexpected.length} unexpected CA(s) detected` });
+      const wildcards = logs.filter((l) => l.commonName?.startsWith("*"));
+      if (wildcards.length > 0) anomalies.push({ severity: "medium", message: `${wildcards.length} wildcard certificate(s) found` });
+
+      setResult({
+        logs,
+        analysis: {
+          anomalies,
+          summary: {
+            total: logs.length,
+            uniqueIssuers: Object.keys(issuerCounts).length,
+            dominantIssuer: dominant[0],
+            wildcardCount: wildcards.length,
+            recentCount: logs.filter((l) => (Date.now() - new Date(l.notBefore)) / 86400000 <= 7).length,
+          },
+        },
+      });
+    } catch (err) {
+      if (err.name === "AbortError") {
+        setError("crt.sh took too long to respond (20s timeout). This is a known limitation of the free public API. Try again or use a less common domain.");
+      } else {
+        setError("Failed to fetch CT logs: " + err.message);
+      }
+    }
 
     setLoading(false);
   };
@@ -86,7 +99,10 @@ setResult({
         >
           <h1 className="text-3xl font-bold">CT Log Monitor</h1>
           <p className="text-gray-400 mt-1">
-            Query Cloudflare's Certificate Transparency logs to detect mis-issued certificates
+            Query Certificate Transparency logs to detect mis-issued certificates
+          </p>
+          <p className="text-gray-600 text-xs mt-1">
+            Powered by crt.sh — the public CT log aggregator. May be slow for popular domains.
           </p>
         </motion.div>
 
@@ -99,7 +115,7 @@ setResult({
           <div className="flex gap-3">
             <input
               type="text"
-              placeholder="e.g. github.com"
+              placeholder="e.g. jklu.edu.in or yoursite.com"
               value={hostname}
               onChange={(e) => setHostname(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && search()}
@@ -113,12 +129,19 @@ setResult({
               {loading ? "Querying..." : "Query CT Logs"}
             </button>
           </div>
+          <p className="text-gray-600 text-xs mt-2">
+            Tip: Use smaller/less popular domains for faster results
+          </p>
         </motion.div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-red-900/30 border border-red-800 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm"
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
         {loading && (
@@ -133,7 +156,9 @@ setResult({
               className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
             />
             <p className="text-gray-400">Querying Certificate Transparency logs...</p>
-            <p className="text-gray-600 text-sm mt-1">This may take a few seconds</p>
+            <p className="text-gray-600 text-sm mt-1">
+              crt.sh can be slow — please wait up to 20 seconds
+            </p>
           </motion.div>
         )}
 
@@ -144,7 +169,6 @@ setResult({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              {/* Summary */}
               {result.analysis.summary && (
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
                   {[
@@ -168,7 +192,6 @@ setResult({
                 </div>
               )}
 
-              {/* Anomalies */}
               {result.analysis.anomalies.length > 0 && (
                 <div className="mb-6 space-y-3">
                   <h2 className="text-lg font-semibold text-red-400">Anomalies Detected</h2>
@@ -199,7 +222,6 @@ setResult({
                 </div>
               )}
 
-              {/* Dominant Issuer */}
               {result.analysis.summary && (
                 <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
                   <p className="text-gray-500 text-xs mb-1">Dominant Issuer</p>
@@ -209,7 +231,6 @@ setResult({
                 </div>
               )}
 
-              {/* CT Log Table */}
               <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-800">
                   <h2 className="text-lg font-semibold">
@@ -238,9 +259,7 @@ setResult({
                           transition={{ delay: i * 0.03 }}
                           className="border-b border-gray-800 hover:bg-gray-800 transition"
                         >
-                          <td className="px-6 py-3 text-white font-mono text-xs">
-                            {log.commonName}
-                          </td>
+                          <td className="px-6 py-3 text-white font-mono text-xs">{log.commonName}</td>
                           <td className="px-6 py-3 text-gray-400 text-xs max-w-xs truncate">
                             {log.issuerName?.split(",")[0]}
                           </td>
@@ -248,11 +267,7 @@ setResult({
                             {new Date(log.notBefore).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-3 text-xs">
-                            <span className={
-                              new Date(log.notAfter) < new Date()
-                                ? "text-red-400"
-                                : "text-green-400"
-                            }>
+                            <span className={new Date(log.notAfter) < new Date() ? "text-red-400" : "text-green-400"}>
                               {new Date(log.notAfter).toLocaleDateString()}
                             </span>
                           </td>
