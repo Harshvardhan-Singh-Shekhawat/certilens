@@ -164,7 +164,7 @@ export default function Domains() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        
+                        <a
                           href={`/domains/${domain.id}`}
                           className="text-lg font-semibold text-white hover:text-blue-400 transition"
                         >
