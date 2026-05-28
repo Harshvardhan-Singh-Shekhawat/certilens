@@ -108,7 +108,7 @@ export default async function Dashboard() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mt-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold">Your Domains</h2>
-            
+            <a
               href="/domains"
               className="text-xs text-blue-400 hover:text-blue-300 transition"
             >
@@ -121,7 +121,7 @@ export default async function Dashboard() {
               <p className="text-gray-600 text-sm mb-6">
                 Add your first domain to start monitoring its TLS certificate
               </p>
-              
+              <a
                 href="/domains"
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition"
               >
