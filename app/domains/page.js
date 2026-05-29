@@ -177,8 +177,7 @@ export default function Domains() {
                       </div>
                       <div className="flex gap-2">
                         {scan && (
-                          <button
-                            onClick={() => toggleExpanded(domain.id)}
+                          <button onClick={(e) => { e.stopPropagation(); const id = e.currentTarget.dataset.id; window.location.href=`/domains/${id}`; }} data-id={domain.id}
                             className="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm px-4 py-2 rounded-lg transition"
                           >
                             {isExpanded ? "Hide Chain" : "View Chain"}
