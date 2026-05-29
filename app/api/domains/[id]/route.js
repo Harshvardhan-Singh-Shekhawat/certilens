@@ -3,12 +3,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../../../lib/auth";
 import prisma from "../../../../lib/prisma";
 
-export async function DELETE(req, context) {
+export async function DELETE(req) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id } = context.params;
+    const url = new URL(req.url);
+    const segments = url.pathname.split("/");
+    const id = segments[segments.length - 1];
 
     if (!id) {
       return NextResponse.json({ error: "Missing domain ID" }, { status: 400 });
