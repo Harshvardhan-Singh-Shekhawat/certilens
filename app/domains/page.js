@@ -164,11 +164,9 @@ export default function Domains() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                             <a
-                          href={`/domains/${domain.id}`}
-                          className="text-lg font-semibold text-white hover:text-blue-400 transition">
+                             <span
                           {domain.hostname}
-                        </a>
+                        </span>
                         <p className="text-gray-500 text-sm">
                           Added {new Date(domain.addedAt).toLocaleDateString()}
                           {" · "}
