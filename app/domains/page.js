@@ -164,7 +164,7 @@ export default function Domains() {
                   >
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                             <span
+                             <span>
                           {domain.hostname}
                         </span>
                         <p className="text-gray-500 text-sm">
